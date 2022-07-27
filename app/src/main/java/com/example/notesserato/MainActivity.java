@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements EditNoteDialogFra
         setListAdapterMethod();
         btnAddListenerMethod();
         etNoteEnterListenerMethod();
+        //always place methods after instance
 
         int INDEX_NOTE = cursor.getColumnIndexOrThrow(KEY_NOTE_COLUMN);
         int INDEX_ID = cursor.getColumnIndexOrThrow(KEY_ID);
