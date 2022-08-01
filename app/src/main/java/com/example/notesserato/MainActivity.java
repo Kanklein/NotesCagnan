@@ -1,8 +1,6 @@
 package com.example.notesserato;
 
-import static com.example.notesserato.Note.KEY_ID;
-import static com.example.notesserato.Note.KEY_NOTE_COLUMN;
-import static com.example.notesserato.Note.KEY_NOTE_CREATED_COLUMN;
+import static com.example.notesserato.Note.*;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -11,6 +9,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 
@@ -43,32 +42,43 @@ public class MainActivity extends AppCompatActivity implements EditNoteDialogFra
         int INDEX_NOTE = cursor.getColumnIndexOrThrow(KEY_NOTE_COLUMN);
         int INDEX_ID = cursor.getColumnIndexOrThrow(KEY_ID);
         int INDEX_CREATED = cursor.getColumnIndexOrThrow(KEY_NOTE_CREATED_COLUMN);
+        int INDEX_IMPORTANT = cursor.getColumnIndexOrThrow(KEY_NOTE_IMPORTANT_COLUMN);
+        //Write cursors up here
         while (cursor.moveToNext()){
             String note = cursor.getString(INDEX_NOTE);
             int id = cursor.getInt(INDEX_ID);
             long date = cursor.getLong(INDEX_CREATED);
+            int int_important = cursor.getInt(INDEX_IMPORTANT);
+            //Stuff to instantiate
             Note n = new Note(note);
             n.id = id;
+            n.important = int_important == 1;
             n.setCreated(new Date(date));
+            //Stuff to pass
             notes.add(n);
         }
     }
 
     public void addNoteMethod(){
         EditText etNote = findViewById(R.id.etNote);
+        CheckBox cbImportant = findViewById(R.id.cbImportant);
         String note = etNote.getText().toString();
         etNote.setText("");
+        boolean important = cbImportant.isChecked();
 
         ContentValues cv = new ContentValues();
         cv.put(KEY_NOTE_COLUMN, note);
         cv.put(KEY_NOTE_CREATED_COLUMN, System.currentTimeMillis());
+        cv.put(KEY_NOTE_IMPORTANT_COLUMN, important ? 1:0);
 
         SQLiteDatabase db = helper.getWritableDatabase();
         int id = (int) db.insert(NotesOpenHelper.DATABASE_TABLE,null, cv);
 
         Note n = new Note((note));
         n.id = id;
+        n.important = important;
         notes.add(new Note(note));
+        //Stuff to pass
         notes_adapter.notifyDataSetChanged();
     }
 
