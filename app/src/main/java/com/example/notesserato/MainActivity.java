@@ -1,10 +1,14 @@
 package com.example.notesserato;
 
-import static com.example.notesserato.Note.*;
+import static com.example.notesserato.Note.KEY_ID;
+import static com.example.notesserato.Note.KEY_NOTE_COLUMN;
+import static com.example.notesserato.Note.KEY_NOTE_CREATED_COLUMN;
+import static com.example.notesserato.Note.KEY_NOTE_IMPORTANT_COLUMN;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -13,13 +17,18 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.CursorLoader;
+import androidx.loader.content.Loader;
 
 import java.util.ArrayList;
 import java.util.Date;
 
-public class MainActivity extends AppCompatActivity implements EditNoteDialogFragment.EditNoteDialogListener {
+public class MainActivity extends AppCompatActivity implements EditNoteDialogFragment.EditNoteDialogListener, LoaderManager.LoaderCallbacks<Cursor> {
     ArrayList<Note> notes;
     NotesAdapter notes_adapter;
     NotesOpenHelper helper;
@@ -30,33 +39,17 @@ public class MainActivity extends AppCompatActivity implements EditNoteDialogFra
         setContentView(R.layout.activity_main);
         helper = new NotesOpenHelper(this, NotesOpenHelper.DATABASE_NAME,
                 null, NotesOpenHelper.DATABASE_VERSION);
-        SQLiteDatabase db = helper.getWritableDatabase();
-        Cursor cursor = db.query(NotesOpenHelper.DATABASE_TABLE, null,null,null,
-                null,null,null);
-
         setListAdapterMethod();
         btnAddListenerMethod();
         etNoteEnterListenerMethod();
+        LoaderManager.getInstance(this).initLoader(0,null,this);
         //always place methods after instance
+    }
 
-        int INDEX_NOTE = cursor.getColumnIndexOrThrow(KEY_NOTE_COLUMN);
-        int INDEX_ID = cursor.getColumnIndexOrThrow(KEY_ID);
-        int INDEX_CREATED = cursor.getColumnIndexOrThrow(KEY_NOTE_CREATED_COLUMN);
-        int INDEX_IMPORTANT = cursor.getColumnIndexOrThrow(KEY_NOTE_IMPORTANT_COLUMN);
-        //Write cursors up here
-        while (cursor.moveToNext()){
-            String note = cursor.getString(INDEX_NOTE);
-            int id = cursor.getInt(INDEX_ID);
-            long date = cursor.getLong(INDEX_CREATED);
-            int int_important = cursor.getInt(INDEX_IMPORTANT);
-            //Stuff to instantiate
-            Note n = new Note(note);
-            n.id = id;
-            n.important = int_important == 1;
-            n.setCreated(new Date(date));
-            //Stuff to pass
-            notes.add(n);
-        }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        LoaderManager.getInstance(this).restartLoader(0,null,this);
     }
 
     public void addNoteMethod(){
@@ -71,11 +64,12 @@ public class MainActivity extends AppCompatActivity implements EditNoteDialogFra
         cv.put(KEY_NOTE_CREATED_COLUMN, System.currentTimeMillis());
         cv.put(KEY_NOTE_IMPORTANT_COLUMN, important ? 1:0);
 
-        SQLiteDatabase db = helper.getWritableDatabase();
-        int id = (int) db.insert(NotesOpenHelper.DATABASE_TABLE,null, cv);
+        ContentResolver cr = getContentResolver();
+        Uri uri = cr.insert(NotesContentProvider.CONTENT_URI, cv);
+        String rowID = uri.getPathSegments().get(1);
 
         Note n = new Note((note));
-        n.id = id;
+        n.id = Integer.parseInt(rowID);
         n.important = important;
         notes.add(new Note(note));
         //Stuff to pass
@@ -123,5 +117,39 @@ public class MainActivity extends AppCompatActivity implements EditNoteDialogFra
     @Override
     public void onCancelListenerMethod(DialogFragment dialog) {
         notes_adapter.onCancelListenerMethod(dialog);
+    }
+
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
+        CursorLoader loader = new CursorLoader(this, NotesContentProvider.CONTENT_URI, null, null, null, null);
+        return loader;
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor cursor) {
+        int INDEX_NOTE = cursor.getColumnIndexOrThrow(KEY_NOTE_COLUMN);
+        int INDEX_ID = cursor.getColumnIndexOrThrow(KEY_ID);
+        int INDEX_CREATED = cursor.getColumnIndexOrThrow(KEY_NOTE_CREATED_COLUMN);
+        int INDEX_IMPORTANT = cursor.getColumnIndexOrThrow(KEY_NOTE_IMPORTANT_COLUMN);
+        //Write cursors up here
+        while (cursor.moveToNext()){
+            String note = cursor.getString(INDEX_NOTE);
+            int id = cursor.getInt(INDEX_ID);
+            long date = cursor.getLong(INDEX_CREATED);
+            int int_important = cursor.getInt(INDEX_IMPORTANT);
+            //Stuff to instantiate
+            Note n = new Note(note);
+            n.id = id;
+            n.important = int_important == 1;
+            n.setCreated(new Date(date));
+            //Stuff to pass
+            notes.add(n);
+        }
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+
     }
 }
