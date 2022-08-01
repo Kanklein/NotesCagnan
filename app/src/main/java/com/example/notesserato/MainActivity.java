@@ -1,6 +1,8 @@
 package com.example.notesserato;
 
-import static com.example.notesserato.Note.*;
+import static com.example.notesserato.Note.KEY_ID;
+import static com.example.notesserato.Note.KEY_NOTE_COLUMN;
+import static com.example.notesserato.Note.KEY_NOTE_CREATED_COLUMN;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -16,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements EditNoteDialogFragment.EditNoteDialogListener {
     ArrayList<Note> notes;
@@ -39,11 +42,14 @@ public class MainActivity extends AppCompatActivity implements EditNoteDialogFra
 
         int INDEX_NOTE = cursor.getColumnIndexOrThrow(KEY_NOTE_COLUMN);
         int INDEX_ID = cursor.getColumnIndexOrThrow(KEY_ID);
+        int INDEX_CREATED = cursor.getColumnIndexOrThrow(KEY_NOTE_CREATED_COLUMN);
         while (cursor.moveToNext()){
             String note = cursor.getString(INDEX_NOTE);
             int id = cursor.getInt(INDEX_ID);
+            long date = cursor.getLong(INDEX_CREATED);
             Note n = new Note(note);
             n.id = id;
+            n.setCreated(new Date(date));
             notes.add(n);
         }
     }
@@ -55,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements EditNoteDialogFra
 
         ContentValues cv = new ContentValues();
         cv.put(KEY_NOTE_COLUMN, note);
+        cv.put(KEY_NOTE_CREATED_COLUMN, System.currentTimeMillis());
 
         SQLiteDatabase db = helper.getWritableDatabase();
         int id = (int) db.insert(NotesOpenHelper.DATABASE_TABLE,null, cv);
